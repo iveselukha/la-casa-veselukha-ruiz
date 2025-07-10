@@ -113,21 +113,21 @@ export const Hero = () => {
       </div>
 
       <div className="text-center max-w-4xl mx-auto animate-fade-in relative z-10">
-        <h1 className="text-4xl md:text-6xl font-playfair font-bold text-terracotta-800 mb-6">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-playfair font-bold text-terracotta-800 mb-4 md:mb-6">
           La Casa
           <br />
           Veselukha Ruiz
         </h1>
-        <p className="text-xl md:text-2xl text-sage-700 mb-4 font-light">
+        <p className="text-lg sm:text-xl md:text-2xl text-sage-700 mb-3 md:mb-4 font-light">
           South London's finest
         </p>
-        <p className="text-lg text-sage-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-base sm:text-lg text-sage-600 mb-8 md:mb-12 max-w-2xl mx-auto leading-relaxed px-4">
           Because I'm tired of manually tracking everyone's movements.
         </p>
         
         <Button 
           onClick={scrollToRooms}
-          className="bg-terracotta-600 hover:bg-terracotta-700 text-white px-8 py-6 text-lg rounded-xl premium-shadow transition-all duration-300 hover:scale-105"
+          className="bg-terracotta-600 hover:bg-terracotta-700 text-white px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg rounded-xl premium-shadow transition-all duration-300 hover:scale-105"
         >
           Check Availability
           <ArrowDown className="ml-2 h-5 w-5" />

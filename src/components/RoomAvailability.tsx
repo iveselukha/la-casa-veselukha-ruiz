@@ -156,17 +156,17 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
   return (
     <section id="rooms-section" className="py-4 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <h2 className="text-4xl md:text-5xl font-playfair font-semibold text-terracotta-800 mb-4">
+        <div className="text-center mb-6 sm:mb-8">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-playfair font-semibold text-terracotta-800 mb-3 sm:mb-4">
             Our Spaces
           </h2>
         </div>
 
-        <div className="space-y-12">
+        <div className="space-y-8 sm:space-y-12">
           {rooms.map((room) => {
             const isEnabled = roomSettings[room.id as keyof RoomSettings]?.enabled ?? true;
             return (
-            <div key={room.id} className="grid lg:grid-cols-3 gap-8 items-stretch">
+            <div key={room.id} className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8 items-stretch">
               {showBookingModal && selectedRoomId === room.id && (
                 <BookingModal
                   roomId={room.id}
@@ -175,15 +175,15 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
                 />
               )}
               {/* Room Details */}
-              <Card className="col-span-2 premium-shadow hover:shadow-lg transition-all duration-300 border-sage-200 bg-white/80 backdrop-blur-sm">
+              <Card className="col-span-1 lg:col-span-2 premium-shadow hover:shadow-lg transition-all duration-300 border-sage-200 bg-white/80 backdrop-blur-sm">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-3xl font-playfair text-terracotta-700">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                    <CardTitle className="text-2xl sm:text-3xl font-playfair text-terracotta-700">
                       {room.name}
                     </CardTitle>
                     <Badge 
                       variant="default"
-                      className={isEnabled ? "bg-sage-600 text-white" : "bg-gray-400 text-white"}
+                      className={`text-xs sm:text-sm ${isEnabled ? "bg-sage-600 text-white" : "bg-gray-400 text-white"}`}
                     >
                       {isEnabled ? "Available for Booking" : "Booking for this period is not yet enabled"}
                     </Badge>
@@ -205,7 +205,7 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
     </div>
   </div>
   
-                    <div className="flex items-center gap-6 text-sage-500 mb-4">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sage-500 mb-4">
                     <div className="flex items-center gap-2">
                       <Bed className="w-5 h-5" />
                       <span>Sleeps {room.capacity}</span>
@@ -242,14 +242,14 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
               </Card>
 
               {/* Room Calendar */}
-              <Card className="col-span-1 premium-shadow border-sage-200 bg-white/80 backdrop-blur-sm">
+              <Card className="col-span-1 lg:col-span-1 premium-shadow border-sage-200 bg-white/80 backdrop-blur-sm">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                     <div>
-                      <CardTitle className="text-xl font-playfair text-terracotta-700">
+                      <CardTitle className="text-lg sm:text-xl font-playfair text-terracotta-700">
                         {room.name} Availability
                       </CardTitle>
-                      <p className="text-sm text-sage-600">
+                      <p className="text-xs sm:text-sm text-sage-600">
                         View availability and book your preferred dates
                       </p>
                     </div>
