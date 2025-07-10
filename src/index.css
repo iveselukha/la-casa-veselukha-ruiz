@@ -1,0 +1,116 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* La Casa Veselukha Ruiz Design System - Rustic Premium Theme */
+
+@layer base {
+  :root {
+    --background: 32 25% 96%;
+    --foreground: 25 15% 15%;
+
+    --card: 32 25% 98%;
+    --card-foreground: 25 15% 15%;
+
+    --popover: 32 25% 98%;
+    --popover-foreground: 25 15% 15%;
+
+    --primary: 18 68% 35%;
+    --primary-foreground: 32 25% 98%;
+
+    --secondary: 75 20% 85%;
+    --secondary-foreground: 25 15% 25%;
+
+    --muted: 75 20% 92%;
+    --muted-foreground: 25 10% 45%;
+
+    --accent: 40 55% 85%;
+    --accent-foreground: 25 15% 25%;
+
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 32 25% 98%;
+
+    --border: 75 15% 88%;
+    --input: 75 15% 88%;
+    --ring: 18 68% 35%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 32 25% 96%;
+    --sidebar-foreground: 25 15% 25%;
+    --sidebar-primary: 18 68% 35%;
+    --sidebar-primary-foreground: 32 25% 98%;
+    --sidebar-accent: 75 20% 90%;
+    --sidebar-accent-foreground: 25 15% 25%;
+    --sidebar-border: 75 15% 85%;
+    --sidebar-ring: 18 68% 35%;
+  }
+
+  .dark {
+    --background: 25 15% 8%;
+    --foreground: 32 25% 95%;
+
+    --card: 25 15% 10%;
+    --card-foreground: 32 25% 95%;
+
+    --popover: 25 15% 10%;
+    --popover-foreground: 32 25% 95%;
+
+    --primary: 18 68% 50%;
+    --primary-foreground: 25 15% 8%;
+
+    --secondary: 75 20% 15%;
+    --secondary-foreground: 32 25% 85%;
+
+    --muted: 75 20% 12%;
+    --muted-foreground: 25 10% 55%;
+
+    --accent: 40 55% 20%;
+    --accent-foreground: 32 25% 85%;
+
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 32 25% 95%;
+
+    --border: 75 15% 18%;
+    --input: 75 15% 18%;
+    --ring: 18 68% 50%;
+    --sidebar-background: 25 15% 8%;
+    --sidebar-foreground: 32 25% 85%;
+    --sidebar-primary: 18 68% 50%;
+    --sidebar-primary-foreground: 25 15% 8%;
+    --sidebar-accent: 75 20% 15%;
+    --sidebar-accent-foreground: 32 25% 85%;
+    --sidebar-border: 75 15% 15%;
+    --sidebar-ring: 18 68% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-playfair;
+  }
+}
+
+@layer components {
+  .rustic-texture {
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(139, 115, 85, 0.02) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(160, 142, 106, 0.03) 0%, transparent 50%);
+  }
+  
+  .premium-shadow {
+    box-shadow: 
+      0 1px 3px rgba(139, 115, 85, 0.1),
+      0 4px 6px rgba(139, 115, 85, 0.05),
+      0 10px 20px rgba(139, 115, 85, 0.03);
+  }
+}

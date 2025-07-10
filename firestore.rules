@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Bookings collection - allow read/write for authenticated users or specific operations
+    match /bookings/{bookingId} {
+      // Allow reading bookings (for admin panel and calendar)
+      allow read: if true;
+      
+      // Allow creating new bookings (for public booking form)
+      allow create: if 
+        request.resource.data.roomId is string &&
+        request.resource.data.roomName is string &&
+        request.resource.data.guestName is string &&
+        request.resource.data.guestEmail is string &&
+        request.resource.data.checkIn is timestamp &&
+        request.resource.data.checkOut is timestamp &&
+        request.resource.data.guests is number &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.createdAt is timestamp;
+      
+      // Only allow updating status (for admin operations)
+      // In a real app, you'd want admin authentication here
+      allow update: if 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+        request.resource.data.status in ['pending', 'confirmed', 'cancelled'];
+      
+      // Allow deleting bookings (for admin operations)
+      // In a real app, you'd want admin authentication here
+      allow delete: if true;
+    }
+    
+    // Deny access to all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 
