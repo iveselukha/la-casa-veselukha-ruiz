@@ -467,7 +467,7 @@ export const AdminPanel = () => {
               {filteredBookings.map((booking) => (
                 <Card key={booking.id} className="border-l-4 border-l-blue-500">
                   {actionConfirmation && actionConfirmation.id === booking.id ? (
-                    <div className="flex flex-col items-center justify-center py-8 fade-in">
+                    <div className="bg-white/95 backdrop-blur-sm border-sage-200 sm:max-w-md mx-auto rounded-xl shadow-lg flex flex-col items-center justify-center py-8 fade-in border">
                       <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-green-500 mb-4"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                       <h2 className="text-xl font-semibold text-terracotta-700 mb-2 text-center">
                         {actionConfirmation.type === 'cancelled' ? 'Booking Cancelled!' : 'Booking Confirmed!'}
@@ -477,7 +477,12 @@ export const AdminPanel = () => {
                           ? "The booking has been marked as cancelled. The guest will be notified by email."
                           : "The booking has been marked as confirmed. The guest will be notified by email."}
                       </p>
-                      <Button onClick={() => setActionConfirmation(null)} className="animated-btn bg-terracotta-600 hover:bg-terracotta-700 text-white w-full max-w-xs">Close</Button>
+                      <Button
+                        onClick={() => setActionConfirmation(null)}
+                        className="animated-btn bg-terracotta-600 hover:bg-terracotta-700 text-white w-full max-w-xs"
+                      >
+                        Close
+                      </Button>
                     </div>
                   ) : (
                   <>
