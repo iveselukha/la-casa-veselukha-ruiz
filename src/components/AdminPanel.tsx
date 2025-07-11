@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { Calendar, Users, Mail, Trash2, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Settings } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Dialog as ConfirmDialog, DialogContent as ConfirmDialogContent } from "@/components/ui/dialog";
+import { ConfirmationMessage } from "@/components/ui/ConfirmationMessage";
 
 export const AdminPanel = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -25,6 +26,7 @@ export const AdminPanel = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
   const [actionConfirmation, setActionConfirmation] = useState<{id: string, type: 'cancelled' | 'confirmed'} | null>(null);
+  const [showAdminConfirmationDialog, setShowAdminConfirmationDialog] = useState(false);
 
   useEffect(() => {
     loadBookings();
@@ -82,20 +84,20 @@ export const AdminPanel = () => {
       if (newStatus === 'confirmed') {
         const bookingToConfirm = bookings.find(b => b.id === bookingId);
         if (bookingToConfirm && wouldCreateConflict(bookingToConfirm)) {
-          alert('Cannot confirm this booking - it conflicts with an existing confirmed booking for the same dates.');
+          setError('Cannot confirm this booking - it conflicts with an existing confirmed booking for the same dates.');
           return;
         }
       }
 
       await updateBookingStatus(bookingId, newStatus);
       await loadBookings(); // Reload to get updated data
-      
-      // Show success message
-      const statusText = newStatus === 'confirmed' ? 'confirmed' : 
-                        newStatus === 'cancelled' ? 'cancelled' : 'updated';
-      alert(`Booking ${statusText} successfully!`);
+      // Show success message in modal only for confirmed/cancelled
+      if (newStatus === 'confirmed' || newStatus === 'cancelled') {
+        setActionConfirmation({ id: bookingId, type: newStatus });
+        setShowAdminConfirmationDialog(true);
+      }
     } catch (err) {
-      alert('Failed to update booking status');
+      setError('Failed to update booking status');
       console.error(err);
     }
   };
@@ -107,7 +109,7 @@ export const AdminPanel = () => {
       await deleteBooking(bookingId);
       await loadBookings(); // Reload to get updated data
     } catch (err) {
-      alert('Failed to delete booking');
+      setError('Failed to delete booking');
       console.error(err);
     }
   };
@@ -466,138 +468,121 @@ export const AdminPanel = () => {
             <div className="space-y-6">
               {filteredBookings.map((booking) => (
                 <Card key={booking.id} className="border-l-4 border-l-blue-500">
-                  {actionConfirmation && actionConfirmation.id === booking.id ? (
-                    <div className="bg-white/95 backdrop-blur-sm border-sage-200 sm:max-w-md mx-auto rounded-xl shadow-lg flex flex-col items-center justify-center py-8 fade-in border">
-                      <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-green-500 mb-4"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                      <h2 className="text-xl font-semibold text-terracotta-700 mb-2 text-center">
-                        {actionConfirmation.type === 'cancelled' ? 'Booking Cancelled!' : 'Booking Confirmed!'}
-                      </h2>
-                      <p className="text-sage-700 text-center mb-4">
-                        {actionConfirmation.type === 'cancelled'
-                          ? "The booking has been marked as cancelled. The guest will be notified by email."
-                          : "The booking has been marked as confirmed. The guest will be notified by email."}
-                      </p>
-                      <Button
-                        onClick={() => setActionConfirmation(null)}
-                        className="animated-btn bg-terracotta-600 hover:bg-terracotta-700 text-white w-full max-w-xs"
-                      >
-                        Close
-                      </Button>
-                    </div>
-                  ) : (
-                  <>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-xl">{booking.roomName}</CardTitle>
-                        <p className="text-gray-600">{booking.guestName}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(booking.status)}
-                        {getStatusBadge(booking.status)}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm">{booking.guestEmail}</span>
-                      </div>
+                  {/* Remove inline confirmation message, now handled by Dialog */}
+                  {!(actionConfirmation && actionConfirmation.id === booking.id) && (
+                    <>
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-xl">{booking.roomName}</CardTitle>
+                            <p className="text-gray-600">{booking.guestName}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(booking.status)}
+                            {getStatusBadge(booking.status)}
+                          </div>
+                        </div>
+                      </CardHeader>
                       
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm">
-                          {format(booking.checkIn instanceof Date ? booking.checkIn : booking.checkIn.toDate(), 'MMM dd, yyyy')} - {format(booking.checkOut instanceof Date ? booking.checkOut : booking.checkOut.toDate(), 'MMM dd, yyyy')}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm">{booking.guests} guest(s)</span>
-                      </div>
-                      
-                      <div className="text-sm text-gray-500">
-                        {format(booking.createdAt instanceof Date ? booking.createdAt : booking.createdAt.toDate(), 'MMM dd, yyyy HH:mm')}
-                      </div>
-                    </div>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm">{booking.guestEmail}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm">
+                              {format(booking.checkIn instanceof Date ? booking.checkIn : booking.checkIn.toDate(), 'MMM dd, yyyy')} - {format(booking.checkOut instanceof Date ? booking.checkOut : booking.checkOut.toDate(), 'MMM dd, yyyy')}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm">{booking.guests} guest(s)</span>
+                          </div>
+                          
+                          <div className="text-sm text-gray-500">
+                            {format(booking.createdAt instanceof Date ? booking.createdAt : booking.createdAt.toDate(), 'MMM dd, yyyy HH:mm')}
+                          </div>
+                        </div>
 
-                    {booking.message && (
-                      <div className="mb-4 p-3 bg-gray-50 rounded-md">
-                        <p className="text-sm text-gray-700">{booking.message}</p>
-                      </div>
-                    )}
+                        {booking.message && (
+                          <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                            <p className="text-sm text-gray-700">{booking.message}</p>
+                          </div>
+                        )}
 
-                    <div className="flex gap-2">
-                      {booking.status === 'pending' && (
-                        <>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                onClick={() => handleStatusUpdate(booking.id!, 'confirmed')}
-                                className={`${
-                                  wouldCreateConflict(booking) 
-                                    ? "bg-gray-400 cursor-not-allowed" 
-                                    : "bg-green-600 hover:bg-green-700"
-                                }`}
-                                disabled={wouldCreateConflict(booking)}
-                                title={wouldCreateConflict(booking) ? "This booking conflicts with an existing confirmed booking" : ""}
-                              >
-                                Confirm
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Mark this booking as confirmed (requires conflict check)</TooltipContent>
-                          </Tooltip>
+                        <div className="flex gap-2">
+                          {booking.status === 'pending' && (
+                            <>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleStatusUpdate(booking.id!, 'confirmed')}
+                                    className={`${
+                                      wouldCreateConflict(booking) 
+                                        ? "bg-gray-400 cursor-not-allowed" 
+                                        : "bg-green-600 hover:bg-green-700"
+                                    }`}
+                                    disabled={wouldCreateConflict(booking)}
+                                    title={wouldCreateConflict(booking) ? "This booking conflicts with an existing confirmed booking" : ""}
+                                  >
+                                    Confirm
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Mark this booking as confirmed (requires conflict check)</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleStatusUpdate(booking.id!, 'cancelled')}
+                                    className="border-red-300 text-red-600 hover:bg-red-50"
+                                  >
+                                    <XCircle className="w-4 h-4 mr-1" /> Cancel Booking
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Mark this booking as cancelled (keeps a record)</TooltipContent>
+                              </Tooltip>
+                            </>
+                          )}
+                          
+                          {booking.status === 'confirmed' && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleStatusUpdate(booking.id!, 'cancelled')}
+                                  className="border-red-300 text-red-600 hover:bg-red-50"
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" /> Cancel Booking
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Mark this booking as cancelled (keeps a record)</TooltipContent>
+                            </Tooltip>
+                          )}
+                          
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleStatusUpdate(booking.id!, 'cancelled')}
-                                className="border-red-300 text-red-600 hover:bg-red-50"
+                                onClick={() => handleDeleteClick(booking.id!)}
+                                className="border-red-500 text-red-700 hover:bg-red-100"
                               >
-                                <XCircle className="w-4 h-4 mr-1" /> Cancel Booking
+                                <Trash2 className="w-4 h-4 mr-1" /> Delete Permanently
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Mark this booking as cancelled (keeps a record)</TooltipContent>
+                            <TooltipContent>Permanently delete this booking (cannot be undone)</TooltipContent>
                           </Tooltip>
-                        </>
-                      )}
-                      
-                      {booking.status === 'confirmed' && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleStatusUpdate(booking.id!, 'cancelled')}
-                              className="border-red-300 text-red-600 hover:bg-red-50"
-                            >
-                              <XCircle className="w-4 h-4 mr-1" /> Cancel Booking
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Mark this booking as cancelled (keeps a record)</TooltipContent>
-                        </Tooltip>
-                      )}
-                      
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteClick(booking.id!)}
-                            className="border-red-500 text-red-700 hover:bg-red-100"
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" /> Delete Permanently
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Permanently delete this booking (cannot be undone)</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </CardContent>
-                  </>
+                        </div>
+                      </CardContent>
+                    </>
                   )}
                 </Card>
               ))}
@@ -679,6 +664,20 @@ export const AdminPanel = () => {
             <Button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">Delete</Button>
             <Button variant="outline" onClick={cancelDelete}>Cancel</Button>
           </div>
+        </ConfirmDialogContent>
+      </ConfirmDialog>
+      {/* Admin confirmation dialog overlay */}
+      <ConfirmDialog open={showAdminConfirmationDialog} onOpenChange={setShowAdminConfirmationDialog}>
+        <ConfirmDialogContent className="sm:max-w-md bg-white/95 backdrop-blur-sm border-sage-200">
+          {actionConfirmation && (
+            <ConfirmationMessage
+              title={actionConfirmation.type === 'cancelled' ? 'Booking Cancelled!' : 'Booking Confirmed!'}
+              message={actionConfirmation.type === 'cancelled'
+                ? 'The booking has been marked as cancelled. The guest will be notified by email.'
+                : 'The booking has been marked as confirmed. The guest will be notified by email.'}
+              onClose={() => { setActionConfirmation(null); setShowAdminConfirmationDialog(false); }}
+            />
+          )}
         </ConfirmDialogContent>
       </ConfirmDialog>
     </div>

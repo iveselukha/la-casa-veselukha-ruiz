@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar, Users, Mail, Phone, MessageSquare } from "lucide-react";
 import { saveBooking, BookingFormData, getAllBookings, Booking } from "@/lib/bookingService";
+import { ConfirmationMessage } from "@/components/ui/ConfirmationMessage";
 
 interface BookingModalProps {
   roomId: string;
@@ -114,12 +115,11 @@ export const BookingModal = ({ roomId, onClose, onBookingSuccess }: BookingModal
       <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-sm border-sage-200">
         <>
           {confirmation ? (
-            <div className="flex flex-col items-center justify-center py-8 fade-in">
-              <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-green-500 mb-4"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              <h2 className="text-xl font-semibold text-terracotta-700 mb-2 text-center">Booking Request Submitted!</h2>
-              <p className="text-sage-700 text-center mb-4">Thank you for your request. We'll get back to you soon.</p>
-              <Button onClick={onClose} className="animated-btn bg-terracotta-600 hover:bg-terracotta-700 text-white w-full max-w-xs">Close</Button>
-            </div>
+            <ConfirmationMessage
+              title="Booking Request Submitted!"
+              message="Thank you for your request. We'll get back to you soon."
+              onClose={onClose}
+            />
           ) : (
             <>
               <DialogHeader>
