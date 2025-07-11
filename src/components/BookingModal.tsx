@@ -40,6 +40,7 @@ export const BookingModal = ({ roomId, onClose, onBookingSuccess }: BookingModal
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmation, setConfirmation] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,8 +65,8 @@ export const BookingModal = ({ roomId, onClose, onBookingSuccess }: BookingModal
       const hasConflict = roomBookings.some(booking => {
         if (booking.status !== 'confirmed') return false;
         
-        const bookingCheckIn = new Date(booking.checkIn);
-        const bookingCheckOut = new Date(booking.checkOut);
+        const bookingCheckIn = booking.checkIn instanceof Date ? booking.checkIn : booking.checkIn.toDate();
+        const bookingCheckOut = booking.checkOut instanceof Date ? booking.checkOut : booking.checkOut.toDate();
         
         // Check for overlap
         return (
@@ -93,12 +94,12 @@ export const BookingModal = ({ roomId, onClose, onBookingSuccess }: BookingModal
       };
 
       await saveBooking(bookingData);
-      alert("Booking request submitted successfully! We'll get back to you soon.");
+      setConfirmation(true);
       onBookingSuccess?.(); // Refresh the calendar
-      onClose();
     } catch (error) {
       console.error('Booking error:', error);
-      alert("Sorry, there was an error submitting your booking. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Sorry, there was an error submitting your booking: ${errorMessage}. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -111,138 +112,150 @@ export const BookingModal = ({ roomId, onClose, onBookingSuccess }: BookingModal
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-sm border-sage-200">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-playfair text-terracotta-700">
-            Book {getRoomName(roomId)}
-          </DialogTitle>
-          <p className="text-sage-600">{getRoomDescription(roomId)}</p>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="guestName" className="text-sage-700">Guest Name(s)</Label>
-            <Input
-              id="guestName"
-              value={formData.guestName}
-              onChange={(e) => handleInputChange("guestName", e.target.value)}
-              className="border-sage-300 focus:border-terracotta-500"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sage-700 flex items-center gap-1">
-                <Mail className="w-4 h-4" />
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                className="border-sage-300 focus:border-terracotta-500"
-                required
-              />
+        <>
+          {confirmation ? (
+            <div className="flex flex-col items-center justify-center py-8 fade-in">
+              <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-green-500 mb-4"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              <h2 className="text-xl font-semibold text-terracotta-700 mb-2 text-center">Booking Request Submitted!</h2>
+              <p className="text-sage-700 text-center mb-4">Thank you for your request. We'll get back to you soon.</p>
+              <Button onClick={onClose} className="animated-btn bg-terracotta-600 hover:bg-terracotta-700 text-white w-full max-w-xs">Close</Button>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sage-700 flex items-center gap-1">
-                <Phone className="w-4 h-4" />
-                Phone
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                className="border-sage-300 focus:border-terracotta-500"
-              />
-            </div>
-          </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-playfair text-terracotta-700">
+                  Book {getRoomName(roomId)}
+                </DialogTitle>
+                <p className="text-sage-600">{getRoomDescription(roomId)}</p>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="guestName" className="text-sage-700">Guest Name(s)</Label>
+                  <Input
+                    id="guestName"
+                    value={formData.guestName}
+                    onChange={(e) => handleInputChange("guestName", e.target.value)}
+                    className="border-sage-300 focus:border-terracotta-500"
+                    required
+                  />
+                </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="checkIn" className="text-sage-700 flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                Check-in
-              </Label>
-              <Input
-                id="checkIn"
-                type="date"
-                value={formData.checkIn}
-                onChange={(e) => handleInputChange("checkIn", e.target.value)}
-                className="border-sage-300 focus:border-terracotta-500"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="checkOut" className="text-sage-700 flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                Check-out
-              </Label>
-              <Input
-                id="checkOut"
-                type="date"
-                value={formData.checkOut}
-                onChange={(e) => handleInputChange("checkOut", e.target.value)}
-                className="border-sage-300 focus:border-terracotta-500"
-                required
-              />
-            </div>
-          </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sage-700 flex items-center gap-1">
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      className="border-sage-300 focus:border-terracotta-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sage-700 flex items-center gap-1">
+                      <Phone className="w-4 h-4" />
+                      Phone
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      className="border-sage-300 focus:border-terracotta-500"
+                    />
+                  </div>
+                </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="guests" className="text-sage-700 flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              Number of Guests
-            </Label>
-            <select
-              id="guests"
-              value={formData.guests}
-              onChange={(e) => handleInputChange("guests", e.target.value)}
-              className="w-full p-2 border border-sage-300 rounded-md focus:border-terracotta-500 focus:outline-none"
-              required
-            >
-              <option value="1">1 Guest</option>
-              <option value="2">2 Guests</option>
-            </select>
-          </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="checkIn" className="text-sage-700 flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Check-in
+                    </Label>
+                    <Input
+                      id="checkIn"
+                      type="date"
+                      value={formData.checkIn}
+                      onChange={(e) => handleInputChange("checkIn", e.target.value)}
+                      className="border-sage-300 focus:border-terracotta-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="checkOut" className="text-sage-700 flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Check-out
+                    </Label>
+                    <Input
+                      id="checkOut"
+                      type="date"
+                      value={formData.checkOut}
+                      onChange={(e) => handleInputChange("checkOut", e.target.value)}
+                      className="border-sage-300 focus:border-terracotta-500"
+                      required
+                    />
+                  </div>
+                </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="message" className="text-sage-700 flex items-center gap-1">
-              <MessageSquare className="w-4 h-4" />
-              Message (Optional)
-            </Label>
-            <Textarea
-              id="message"
-              value={formData.message}
-              onChange={(e) => handleInputChange("message", e.target.value)}
-              className="border-sage-300 focus:border-terracotta-500"
-              placeholder="Any special requests or questions?"
-              rows={3}
-            />
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="guests" className="text-sage-700 flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    Number of Guests
+                  </Label>
+                  <select
+                    id="guests"
+                    value={formData.guests}
+                    onChange={(e) => handleInputChange("guests", e.target.value)}
+                    className="w-full p-2 border border-sage-300 rounded-md focus:border-terracotta-500 focus:outline-none"
+                    required
+                  >
+                    <option value="1">1 Guest</option>
+                    <option value="2">2 Guests</option>
+                  </select>
+                </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 border-sage-300 text-sage-600 hover:bg-sage-50"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 bg-terracotta-600 hover:bg-terracotta-700 text-white disabled:opacity-50"
-            >
-              {isSubmitting ? "Submitting..." : "Submit Request"}
-            </Button>
-          </div>
-        </form>
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-sage-700 flex items-center gap-1">
+                    <MessageSquare className="w-4 h-4" />
+                    Message (Optional)
+                  </Label>
+                  <Textarea
+                    id="message"
+                    value={formData.message}
+                    onChange={(e) => handleInputChange("message", e.target.value)}
+                    className="border-sage-300 focus:border-terracotta-500"
+                    placeholder="Any special requests or questions?"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                    className="flex-1 border-sage-300 text-sage-600 hover:bg-sage-50"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-terracotta-600 hover:bg-terracotta-700 text-white disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Request"}
+                  </Button>
+                </div>
+              </form>
+            </>
+          )}
+        </>
       </DialogContent>
     </Dialog>
   );

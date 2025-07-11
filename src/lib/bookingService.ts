@@ -17,12 +17,12 @@ export interface Booking {
   roomName: string;
   guestName: string;
   guestEmail: string;
-  checkIn: Date;
-  checkOut: Date;
+  checkIn: Date | Timestamp;
+  checkOut: Date | Timestamp;
   guests: number;
   message?: string;
   status: 'pending' | 'confirmed' | 'cancelled';
-  createdAt: Date;
+  createdAt: Date | Timestamp;
   totalPrice?: number;
 }
 
@@ -40,30 +40,34 @@ export interface BookingFormData {
 // Save a new booking
 export const saveBooking = async (bookingData: BookingFormData): Promise<string> => {
   try {
-    const booking: Omit<Booking, 'id' | 'createdAt'> = {
+    // Only include message if it exists
+    const booking: any = {
       roomId: bookingData.roomId,
       roomName: bookingData.roomName,
       guestName: bookingData.guestName,
       guestEmail: bookingData.guestEmail,
-      checkIn: new Date(bookingData.checkIn),
-      checkOut: new Date(bookingData.checkOut),
+      checkIn: Timestamp.fromDate(new Date(bookingData.checkIn)),
+      checkOut: Timestamp.fromDate(new Date(bookingData.checkOut)),
       guests: bookingData.guests,
-      message: bookingData.message,
-      status: 'pending',
-    };
-
-    const docRef = await addDoc(collection(db, 'bookings'), {
-      ...booking,
+      status: 'pending' as const,
       createdAt: Timestamp.now(),
-    });
+    };
+    if (bookingData.message && bookingData.message.trim() !== "") {
+      booking.message = bookingData.message;
+    }
+
+    const docRef = await addDoc(collection(db, 'bookings'), booking);
 
     // Send email notification (we'll implement this later)
-    await sendBookingNotification(booking);
+    await sendBookingNotification({
+      ...booking,
+      checkIn: booking.checkIn.toDate(),
+      checkOut: booking.checkOut.toDate(),
+    });
 
     return docRef.id;
   } catch (error) {
-    console.error('Error saving booking:', error);
-    throw new Error('Failed to save booking');
+    throw new Error(`Failed to save booking: ${error.message}`);
   }
 };
 
@@ -73,13 +77,16 @@ export const getAllBookings = async (): Promise<Booking[]> => {
     const q = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      checkIn: doc.data().checkIn?.toDate() || new Date(),
-      checkOut: doc.data().checkOut?.toDate() || new Date(),
-    })) as Booking[];
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+        checkIn: data.checkIn?.toDate ? data.checkIn.toDate() : new Date(data.checkIn),
+        checkOut: data.checkOut?.toDate ? data.checkOut.toDate() : new Date(data.checkOut),
+      } as Booking;
+    });
   } catch (error) {
     console.error('Error fetching bookings:', error);
     throw new Error('Failed to fetch bookings');
@@ -111,12 +118,10 @@ export const deleteBooking = async (bookingId: string): Promise<void> => {
 };
 
 // Email notification functions (placeholder - we'll implement these later)
-const sendBookingNotification = async (booking: Omit<Booking, 'id' | 'createdAt'>): Promise<void> => {
+const sendBookingNotification = async (booking: any): Promise<void> => {
   // TODO: Implement email sending
-  console.log('Sending booking notification for:', booking.guestEmail);
 };
 
 const sendStatusUpdateNotification = async (bookingId: string, status: Booking['status']): Promise<void> => {
   // TODO: Implement status update email
-  console.log('Sending status update for booking:', bookingId, 'Status:', status);
 }; 

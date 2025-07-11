@@ -103,8 +103,10 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
       
       // Check if there's a booking for this date
       const bookingForDate = roomBookings.find(booking => {
-        const checkIn = format(booking.checkIn, 'yyyy-MM-dd');
-        const checkOut = format(booking.checkOut, 'yyyy-MM-dd');
+        const checkInDate = booking.checkIn instanceof Date ? booking.checkIn : booking.checkIn.toDate();
+        const checkOutDate = booking.checkOut instanceof Date ? booking.checkOut : booking.checkOut.toDate();
+        const checkIn = format(checkInDate, 'yyyy-MM-dd');
+        const checkOut = format(checkOutDate, 'yyyy-MM-dd');
         const currentDate = format(date, 'yyyy-MM-dd');
         
         return currentDate >= checkIn && currentDate < checkOut;
@@ -139,8 +141,8 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
     const hasConflict = roomBookings.some(booking => {
       if (booking.status !== 'confirmed') return false;
       
-      const bookingCheckIn = new Date(booking.checkIn);
-      const bookingCheckOut = new Date(booking.checkOut);
+      const bookingCheckIn = booking.checkIn instanceof Date ? booking.checkIn : booking.checkIn.toDate();
+      const bookingCheckOut = booking.checkOut instanceof Date ? booking.checkOut : booking.checkOut.toDate();
       
       // Check for overlap
       return (
@@ -154,9 +156,9 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
   };
 
   return (
-    <section id="rooms-section" className="py-4 px-4">
+    <section id="rooms-section" className="py-4 px-4 fade-in">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-6 sm:mb-8">
+        <div className="text-center mb-6 sm:mb-8 fade-in">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-playfair font-semibold text-terracotta-800 mb-3 sm:mb-4">
             Our Spaces
           </h2>
@@ -166,7 +168,7 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
           {rooms.map((room) => {
             const isEnabled = roomSettings[room.id as keyof RoomSettings]?.enabled ?? true;
             return (
-            <div key={room.id} className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8 items-stretch">
+            <div key={room.id} className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8 items-stretch fade-in">
               {showBookingModal && selectedRoomId === room.id && (
                 <BookingModal
                   roomId={room.id}
@@ -175,7 +177,7 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
                 />
               )}
               {/* Room Details */}
-              <Card className="col-span-1 lg:col-span-2 premium-shadow hover:shadow-lg transition-all duration-300 border-sage-200 bg-white/80 backdrop-blur-sm">
+              <Card className="col-span-1 lg:col-span-2 premium-shadow hover:shadow-lg transition-all duration-300 border-sage-200 bg-white/80 backdrop-blur-sm room-card-animate">
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                     <CardTitle className="text-2xl sm:text-3xl font-playfair text-terracotta-700">
@@ -198,10 +200,10 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
   {/* Placeholder photos */}
   <div className="grid grid-cols-2 gap-4 mb-6">
     <div className="aspect-video bg-sage-100 rounded-lg flex items-center justify-center border-2 border-dashed border-sage-300">
-      <span className="text-sage-500 text-sm">Room Photo 1 Pending</span>
+      <span className="text-sage-500 text-sm text-center px-2">Room Photo 1 Pending</span>
     </div>
     <div className="aspect-video bg-sage-100 rounded-lg flex items-center justify-center border-2 border-dashed border-sage-300">
-      <span className="text-sage-500 text-sm">Room Photo 2 Pending</span>
+      <span className="text-sage-500 text-sm text-center px-2">Room Photo 2 Pending</span>
     </div>
   </div>
   
@@ -226,7 +228,7 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
       setShowBookingModal(true);
     }}
     disabled={!isEnabled}
-    className={`w-full ${
+    className={`w-full animated-btn ${
       isEnabled
         ? "bg-terracotta-600 hover:bg-terracotta-700 text-white"
         : "bg-sage-200 text-sage-500 cursor-not-allowed"
@@ -242,7 +244,7 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
               </Card>
 
               {/* Room Calendar */}
-              <Card className="col-span-1 lg:col-span-1 premium-shadow border-sage-200 bg-white/80 backdrop-blur-sm">
+              <Card className="col-span-1 lg:col-span-1 premium-shadow border-sage-200 bg-white/80 backdrop-blur-sm room-card-animate">
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                     <div>

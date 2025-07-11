@@ -8,6 +8,8 @@ import { getAllBookings, updateBookingStatus, deleteBooking, Booking } from "@/l
 import { loadRoomSettings, saveRoomSettings, RoomSettings } from "@/lib/roomSettingsService";
 import { format } from "date-fns";
 import { Calendar, Users, Mail, Trash2, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Settings } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Dialog as ConfirmDialog, DialogContent as ConfirmDialogContent } from "@/components/ui/dialog";
 
 export const AdminPanel = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -15,6 +17,14 @@ export const AdminPanel = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'bookings' | 'settings'>('dashboard');
   const [roomSettings, setRoomSettings] = useState<RoomSettings>(loadRoomSettings());
+  const [roomFilter, setRoomFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
+  const [actionConfirmation, setActionConfirmation] = useState<{id: string, type: 'cancelled' | 'confirmed'} | null>(null);
 
   useEffect(() => {
     loadBookings();
@@ -102,6 +112,22 @@ export const AdminPanel = () => {
     }
   };
 
+  const handleDeleteClick = (bookingId: string) => {
+    setBookingToDelete(bookingId);
+    setDeleteDialogOpen(true);
+  };
+  const confirmDelete = async () => {
+    if (bookingToDelete) {
+      await handleDelete(bookingToDelete);
+      setDeleteDialogOpen(false);
+      setBookingToDelete(null);
+    }
+  };
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setBookingToDelete(null);
+  };
+
   // Check if confirming a booking would create a conflict
   const wouldCreateConflict = (bookingToConfirm: Booking): boolean => {
     const otherConfirmedBookings = bookings.filter(booking => 
@@ -110,12 +136,12 @@ export const AdminPanel = () => {
       booking.roomId === bookingToConfirm.roomId
     );
 
-    const checkInDate = new Date(bookingToConfirm.checkIn);
-    const checkOutDate = new Date(bookingToConfirm.checkOut);
+    const checkInDate = bookingToConfirm.checkIn instanceof Date ? bookingToConfirm.checkIn : bookingToConfirm.checkIn.toDate();
+    const checkOutDate = bookingToConfirm.checkOut instanceof Date ? bookingToConfirm.checkOut : bookingToConfirm.checkOut.toDate();
 
     return otherConfirmedBookings.some(booking => {
-      const bookingCheckIn = new Date(booking.checkIn);
-      const bookingCheckOut = new Date(booking.checkOut);
+      const bookingCheckIn = booking.checkIn instanceof Date ? booking.checkIn : booking.checkIn.toDate();
+      const bookingCheckOut = booking.checkOut instanceof Date ? booking.checkOut : booking.checkOut.toDate();
 
       // Check for overlap
       return (
@@ -140,8 +166,8 @@ export const AdminPanel = () => {
     
     bookings.forEach(booking => {
       if (booking.status === 'confirmed') {
-        const checkIn = new Date(booking.checkIn);
-        const checkOut = new Date(booking.checkOut);
+        const checkIn = booking.checkIn instanceof Date ? booking.checkIn : booking.checkIn.toDate();
+        const checkOut = booking.checkOut instanceof Date ? booking.checkOut : booking.checkOut.toDate();
         const days = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
         
         const existing = guestStats.get(booking.guestEmail);
@@ -189,6 +215,24 @@ export const AdminPanel = () => {
         return null;
     }
   };
+
+  // Filtered bookings
+  const filteredBookings = bookings.filter(booking => {
+    // Room filter
+    if (roomFilter !== 'all' && booking.roomId !== roomFilter) return false;
+    // Status filter
+    if (statusFilter !== 'all' && booking.status !== statusFilter) return false;
+    // Date range filter (checkIn date)
+    const checkInDate = booking.checkIn instanceof Date ? booking.checkIn : booking.checkIn.toDate();
+    if (dateFrom && checkInDate < new Date(dateFrom)) return false;
+    if (dateTo && checkInDate > new Date(dateTo)) return false;
+    // Search filter (guest name or email)
+    if (search && !(
+      booking.guestName.toLowerCase().includes(search.toLowerCase()) ||
+      booking.guestEmail.toLowerCase().includes(search.toLowerCase())
+    )) return false;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -365,7 +409,54 @@ export const AdminPanel = () => {
 
       {activeTab === 'bookings' && (
         <>
-          {bookings.length === 0 ? (
+          {/* Filters and search bar */}
+          <div className="flex flex-wrap gap-2 mb-4 items-end">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Room</label>
+              <select value={roomFilter} onChange={e => setRoomFilter(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                <option value="all">All</option>
+                <option value="room-1">Room Uno</option>
+                <option value="room-2">Room Dos</option>
+                <option value="room-3">El Sofá</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Status</label>
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="border rounded px-2 py-1 text-sm">
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">From</label>
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">To</label>
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <div className="flex-1 min-w-[180px]">
+              <label className="block text-xs text-gray-600 mb-1">Search</label>
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Guest name or email"
+                className="border rounded px-2 py-1 text-sm w-full"
+              />
+            </div>
+            <button
+              type="button"
+              className="ml-2 px-3 py-1 text-xs rounded bg-gray-100 border border-gray-300 hover:bg-gray-200"
+              onClick={() => { setRoomFilter('all'); setStatusFilter('all'); setDateFrom(''); setDateTo(''); setSearch(''); }}
+            >
+              Reset
+            </button>
+          </div>
+          {/* End filters and search bar */}
+          {filteredBookings.length === 0 ? (
             <Card>
               <CardContent className="text-center py-8">
                 <p className="text-gray-500">No bookings found</p>
@@ -373,8 +464,23 @@ export const AdminPanel = () => {
             </Card>
           ) : (
             <div className="space-y-6">
-              {bookings.map((booking) => (
+              {filteredBookings.map((booking) => (
                 <Card key={booking.id} className="border-l-4 border-l-blue-500">
+                  {actionConfirmation && actionConfirmation.id === booking.id ? (
+                    <div className="flex flex-col items-center justify-center py-8 fade-in">
+                      <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-green-500 mb-4"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      <h2 className="text-xl font-semibold text-terracotta-700 mb-2 text-center">
+                        {actionConfirmation.type === 'cancelled' ? 'Booking Cancelled' : 'Booking Confirmed'}
+                      </h2>
+                      <p className="text-sage-700 text-center mb-4">
+                        {actionConfirmation.type === 'cancelled'
+                          ? 'This booking has been marked as cancelled.'
+                          : 'This booking has been marked as confirmed.'}
+                      </p>
+                      <Button onClick={() => setActionConfirmation(null)} className="animated-btn bg-terracotta-600 hover:bg-terracotta-700 text-white w-full max-w-xs">Close</Button>
+                    </div>
+                  ) : (
+                  <>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
@@ -398,7 +504,7 @@ export const AdminPanel = () => {
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-gray-500" />
                         <span className="text-sm">
-                          {format(booking.checkIn, 'MMM dd, yyyy')} - {format(booking.checkOut, 'MMM dd, yyyy')}
+                          {format(booking.checkIn instanceof Date ? booking.checkIn : booking.checkIn.toDate(), 'MMM dd, yyyy')} - {format(booking.checkOut instanceof Date ? booking.checkOut : booking.checkOut.toDate(), 'MMM dd, yyyy')}
                         </span>
                       </div>
                       
@@ -408,7 +514,7 @@ export const AdminPanel = () => {
                       </div>
                       
                       <div className="text-sm text-gray-500">
-                        {format(booking.createdAt, 'MMM dd, yyyy HH:mm')}
+                        {format(booking.createdAt instanceof Date ? booking.createdAt : booking.createdAt.toDate(), 'MMM dd, yyyy HH:mm')}
                       </div>
                     </div>
 
@@ -421,51 +527,73 @@ export const AdminPanel = () => {
                     <div className="flex gap-2">
                       {booking.status === 'pending' && (
                         <>
-                          <Button
-                            size="sm"
-                            onClick={() => handleStatusUpdate(booking.id!, 'confirmed')}
-                            className={`${
-                              wouldCreateConflict(booking) 
-                                ? "bg-gray-400 cursor-not-allowed" 
-                                : "bg-green-600 hover:bg-green-700"
-                            }`}
-                            disabled={wouldCreateConflict(booking)}
-                            title={wouldCreateConflict(booking) ? "This booking conflicts with an existing confirmed booking" : ""}
-                          >
-                            Confirm
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleStatusUpdate(booking.id!, 'cancelled')}
-                            className="border-red-300 text-red-600 hover:bg-red-50"
-                          >
-                            Cancel
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                onClick={() => handleStatusUpdate(booking.id!, 'confirmed')}
+                                className={`${
+                                  wouldCreateConflict(booking) 
+                                    ? "bg-gray-400 cursor-not-allowed" 
+                                    : "bg-green-600 hover:bg-green-700"
+                                }`}
+                                disabled={wouldCreateConflict(booking)}
+                                title={wouldCreateConflict(booking) ? "This booking conflicts with an existing confirmed booking" : ""}
+                              >
+                                Confirm
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Mark this booking as confirmed (requires conflict check)</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleStatusUpdate(booking.id!, 'cancelled')}
+                                className="border-red-300 text-red-600 hover:bg-red-50"
+                              >
+                                <XCircle className="w-4 h-4 mr-1" /> Cancel Booking
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Mark this booking as cancelled (keeps a record)</TooltipContent>
+                          </Tooltip>
                         </>
                       )}
                       
                       {booking.status === 'confirmed' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleStatusUpdate(booking.id!, 'cancelled')}
-                          className="border-red-300 text-red-600 hover:bg-red-50"
-                        >
-                          Cancel
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleStatusUpdate(booking.id!, 'cancelled')}
+                              className="border-red-300 text-red-600 hover:bg-red-50"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" /> Cancel Booking
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Mark this booking as cancelled (keeps a record)</TooltipContent>
+                        </Tooltip>
                       )}
                       
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(booking.id!)}
-                        className="border-red-300 text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteClick(booking.id!)}
+                            className="border-red-500 text-red-700 hover:bg-red-100"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" /> Delete Permanently
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Permanently delete this booking (cannot be undone)</TooltipContent>
+                      </Tooltip>
                     </div>
                   </CardContent>
+                  </>
+                  )}
                 </Card>
               ))}
             </div>
@@ -537,6 +665,17 @@ export const AdminPanel = () => {
           </Card>
         </div>
       )}
+      {/* Delete confirmation dialog */}
+      <ConfirmDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <ConfirmDialogContent className="max-w-xs text-center">
+          <h2 className="text-lg font-semibold mb-2">Delete Booking?</h2>
+          <p className="mb-4 text-gray-600">This will permanently delete the booking. This action cannot be undone.</p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">Delete</Button>
+            <Button variant="outline" onClick={cancelDelete}>Cancel</Button>
+          </div>
+        </ConfirmDialogContent>
+      </ConfirmDialog>
     </div>
   );
 };
