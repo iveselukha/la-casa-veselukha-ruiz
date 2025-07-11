@@ -470,12 +470,12 @@ export const AdminPanel = () => {
                     <div className="flex flex-col items-center justify-center py-8 fade-in">
                       <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-green-500 mb-4"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                       <h2 className="text-xl font-semibold text-terracotta-700 mb-2 text-center">
-                        {actionConfirmation.type === 'cancelled' ? 'Booking Cancelled' : 'Booking Confirmed'}
+                        {actionConfirmation.type === 'cancelled' ? 'Booking Cancelled!' : 'Booking Confirmed!'}
                       </h2>
                       <p className="text-sage-700 text-center mb-4">
                         {actionConfirmation.type === 'cancelled'
-                          ? 'This booking has been marked as cancelled.'
-                          : 'This booking has been marked as confirmed.'}
+                          ? "The booking has been marked as cancelled. The guest will be notified by email."
+                          : "The booking has been marked as confirmed. The guest will be notified by email."}
                       </p>
                       <Button onClick={() => setActionConfirmation(null)} className="animated-btn bg-terracotta-600 hover:bg-terracotta-700 text-white w-full max-w-xs">Close</Button>
                     </div>
