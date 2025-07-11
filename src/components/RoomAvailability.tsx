@@ -91,7 +91,10 @@ export const RoomAvailability = ({ onBookRoom }: RoomAvailabilityProps) => {
 
   // Convert real bookings to calendar format
   const getRoomBookings = (roomId: string) => {
-    const roomBookings = allBookings.filter(booking => booking.roomId === roomId);
+    // Only consider bookings that are not cancelled
+    const roomBookings = allBookings.filter(
+      booking => booking.roomId === roomId && booking.status !== 'cancelled'
+    );
     
     // Create calendar data for the next 2 years (730 days)
     const calendarData = [];
